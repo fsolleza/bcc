@@ -68,9 +68,27 @@ int sys_enter(struct trace_event_raw_sys_enter *args)
 	return 0;
 }
 
+typedef struct {
+bool not_empty;
+uint64_t agg_vv6ev;
+} struct_0;
+
+typedef struct {
+int64_t syscall_number;
+} struct_1;
+
+struct {
+__uint(type, BPF_MAP_TYPE_PERCPU_HASH);
+__uint(max_entries, 4096);
+__type(key, struct_1);
+__type(value, struct_0);
+} map_0 SEC(".maps");
+
+
 SEC("tracepoint/raw_syscalls/sys_exit")
 int sys_exit(struct trace_event_raw_sys_exit *args)
 {
+
 	if (filter_cg && !bpf_current_task_under_cgroup(&cgroup_map, 0))
 		return 0;
 
@@ -81,6 +99,10 @@ int sys_exit(struct trace_event_raw_sys_exit *args)
 	u64 *start_ts, lat = 0;
 	u32 tid = id;
 	u32 key;
+
+	struct_1 k = {0};
+	k.syscall_number = args->id;
+	struct_0 v = {0};
 
 	/* this happens when there is an interrupt */
 	if (args->id == -1)
@@ -100,15 +122,33 @@ int sys_exit(struct trace_event_raw_sys_exit *args)
 		lat = bpf_ktime_get_ns() - *start_ts;
 	}
 
-	key = (count_by_process) ? pid : args->id;
-	val = bpf_map_lookup_or_try_init(&data, &key, &zero);
-	if (val) {
-		__sync_fetch_and_add(&val->count, 1);
-		if (count_by_process)
-			save_proc_name(val);
-		if (measure_latency)
-			__sync_fetch_and_add(&val->total_ns, lat);
+	// key = (count_by_process) ? pid : args->id;
+	// val = bpf_map_lookup_or_try_init(&data, &key, &zero);
+	// if (val) {
+	// 	__sync_fetch_and_add(&val->count, 1);
+	// 	if (count_by_process)
+	// 		save_proc_name(val);
+	// 	if (measure_latency)
+	// 		__sync_fetch_and_add(&val->total_ns, lat);
+	// }
+
+	struct_0 *entry;
+	/* Kernel Operator: GroupByUpdate */
+	entry = bpf_map_lookup_elem(&map_0, &k);
+	if (!entry) {
+		bpf_map_update_elem(&map_0, &k, &v, 0);
+	entry = bpf_map_lookup_elem(&map_0, &k);
 	}
+	if (!entry) {
+		goto END_0;
+	}
+	if (!entry->not_empty) {
+		entry->agg_vv6ev = 0;
+		entry->not_empty = true;
+	}
+	entry->agg_vv6ev += 1;
+END_0:
+
 	return 0;
 }
 
