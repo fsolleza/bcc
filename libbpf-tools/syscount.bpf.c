@@ -89,8 +89,8 @@ SEC("tracepoint/raw_syscalls/sys_exit")
 int sys_exit(struct trace_event_raw_sys_exit *args)
 {
 
-	if (filter_cg && !bpf_current_task_under_cgroup(&cgroup_map, 0))
-		return 0;
+	// if (filter_cg && !bpf_current_task_under_cgroup(&cgroup_map, 0))
+	// 	return 0;
 
 	u64 id = bpf_get_current_pid_tgid();
 	static const struct data_t zero;
@@ -105,22 +105,22 @@ int sys_exit(struct trace_event_raw_sys_exit *args)
 	struct_0 v = {0};
 
 	/* this happens when there is an interrupt */
-	if (args->id == -1)
-		return 0;
+	// if (args->id == -1)
+	// 	return 0;
 
 	if (filter_pid && pid != filter_pid)
 		return 0;
-	if (filter_failed && args->ret >= 0)
-		return 0;
-	if (filter_errno && args->ret != -filter_errno)
-		return 0;
+	// if (filter_failed && args->ret >= 0)
+	// 	return 0;
+	// if (filter_errno && args->ret != -filter_errno)
+	// 	return 0;
 
-	if (measure_latency) {
-		start_ts = bpf_map_lookup_elem(&start, &tid);
-		if (!start_ts)
-			return 0;
-		lat = bpf_ktime_get_ns() - *start_ts;
-	}
+	// if (measure_latency) {
+	// 	start_ts = bpf_map_lookup_elem(&start, &tid);
+	// 	if (!start_ts)
+	// 		return 0;
+	// 	lat = bpf_ktime_get_ns() - *start_ts;
+	// }
 
 	// key = (count_by_process) ? pid : args->id;
 	// val = bpf_map_lookup_or_try_init(&data, &key, &zero);
