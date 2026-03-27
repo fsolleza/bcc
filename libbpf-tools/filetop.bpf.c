@@ -77,14 +77,14 @@ static int probe_entry(struct pt_regs *ctx, struct file *file, size_t count, enu
 	return 0;
 };
 
-SEC("kprobe/vfs_read")
-int BPF_KPROBE(vfs_read_entry, struct file *file, char *buf, size_t count, loff_t *pos)
+SEC("fentry/vfs_read")
+int BPF_PROG(vfs_read_entry, struct file *file, char *buf, size_t count, loff_t *pos)
 {
 	return probe_entry(ctx, file, count, READ);
 }
 
-SEC("kprobe/vfs_write")
-int BPF_KPROBE(vfs_write_entry, struct file *file, const char *buf, size_t count, loff_t *pos)
+SEC("fentry/vfs_write")
+int BPF_PROG(vfs_write_entry, struct file *file, const char *buf, size_t count, loff_t *pos)
 {
 	return probe_entry(ctx, file, count, WRITE);
 }
